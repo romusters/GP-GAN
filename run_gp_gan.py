@@ -7,7 +7,7 @@ from chainer import cuda, serializers
 from skimage import img_as_float
 from skimage.io import imread, imsave
 
-from model import EncoderDecoder, DCGAN_G
+from model import EncoderDecoder, Decoder
 
 from gp_gan import gp_gan
 
@@ -59,7 +59,7 @@ def main():
         print('Load pretrained Blending GAN model from {} ...'.format(args.g_path))
         serializers.load_npz(args.g_path, G)
     else:
-        G = DCGAN_G(args.image_size, args.nc, args.ngf)
+        G = Decoder(args.image_size, args.nc, args.ngf)
         print('Load pretrained unsupervised Blending GAN model from {} ...'.format(args.unsupervised_path))
         serializers.load_npz(args.unsupervised_path, G)
     

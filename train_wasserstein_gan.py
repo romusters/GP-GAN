@@ -10,7 +10,7 @@ import chainer
 from chainer import training, serializers, Variable
 from chainer.training import extensions
 
-from model import DCGAN_G, DCGAN_D, init_bn, init_conv
+from model import Decoder, Encoder, init_bn, init_conv
 from dataset import H5pyDataset
 from updater import WassersteinUpdater
 from sampler import sampler
@@ -61,9 +61,9 @@ def main():
     # Set up G & D
     print('Create & Init models ...')
     print('\tInit G network ...')
-    G = DCGAN_G(args.image_size, args.nc, args.ngf, init_conv, init_bn)
+    G = Decoder(args.image_size, args.nc, args.ngf, init_conv, init_bn)
     print('\tInit D network ...')
-    D = DCGAN_D(args.image_size, args.ndf, 1, init_conv, init_bn)
+    D = Encoder(args.image_size, args.ndf, 1, init_conv, init_bn)
     if args.gpu >= 0:
         print('\tCopy models to gpu {} ...'.format(args.gpu))
         chainer.cuda.get_device(args.gpu).use()  # Make a specified GPU current

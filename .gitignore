@@ -1,3 +1,13 @@
+# data
+*.hdf5
+images
+
+# Pycharm
+.idea
+
+# result
+*result/
+
 # Model files
 *.npz
 *.caffemodel

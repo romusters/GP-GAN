@@ -32,29 +32,28 @@ class LeakyReLU(chainer.Chain):
     def __call__(self, x):
         return F.leaky_relu(x)
 
-class DCGAN_G(chainer.ChainList):
-    def __init__(self, isize, nc, ngf, conv_init=None, bn_init=None):
-        cngf, tisize = ngf//2, 4
+class Decoder(chainer.ChainList):
+    def __init__(self, isize, nc, ndf, conv_init=None, bn_init=None):
+        cndf, tisize = ndf//2, 4
         while tisize != isize:
-            cngf = cngf * 2
+            cndf = cndf * 2
             tisize = tisize * 2
 
         layers = []
         # input is Z, going into a convolution
-        layers.append(L.Deconvolution2D(None, cngf, ksize=4, stride=1, pad=0, initialW=conv_init, nobias=True))
-        layers.append(L.BatchNormalization(cngf, initial_gamma=bn_init))
+        layers.append(L.Deconvolution2D(None, cndf, ksize=4, stride=1, pad=0, initialW=conv_init, nobias=True))
+        layers.append(L.BatchNormalization(cndf, initial_gamma=bn_init))
         layers.append(ReLU())
-        csize, cndf = 4, cngf
+        csize= 4
         while csize < isize//2:
-            layers.append(L.Deconvolution2D(None, cngf//2, ksize=4, stride=2, pad=1, initialW=conv_init, nobias=True))
-            layers.append(L.BatchNormalization(cngf//2, initial_gamma=bn_init))
+            layers.append(L.Deconvolution2D(None, cndf//2, ksize=4, stride=2, pad=1, initialW=conv_init, nobias=True))
+            layers.append(L.BatchNormalization(cndf//2, initial_gamma=bn_init))
             layers.append(ReLU())
-            cngf = cngf // 2
+            cndf = cndf // 2
             csize = csize * 2
         layers.append(L.Deconvolution2D(None, nc, ksize=4, stride=2, pad=1, initialW=conv_init, nobias=True))
-        layers.append(Tanh())
 
-        super(DCGAN_G, self).__init__(*layers)
+        super(Decoder, self).__init__(*layers)
 
     def __call__(self, x, test=False):
         for i in range(len(self)):
@@ -64,27 +63,26 @@ class DCGAN_G(chainer.ChainList):
                 x = self[i](x)
         return x
 
-class DCGAN_D(chainer.ChainList):
-    def __init__(self, isize, ndf, nz=1, conv_init=None, bn_init=None):
+class Encoder(chainer.ChainList):
+    def __init__(self, isize, nef, nz=100, conv_init=None, bn_init=None):
         layers = []
-        layers.append(L.Convolution2D(None, ndf, ksize=4, stride=2, pad=1, initialW=conv_init, nobias=True))
+        layers.append(L.Convolution2D(None, nef, ksize=4, stride=2, pad=1, initialW=conv_init, nobias=True))
         layers.append(LeakyReLU())
-        csize, cndf = isize / 2, ndf
+        csize, cnef = isize // 2, nef
         while csize > 4:
-            in_feat = cndf
-            out_feat = cndf * 2
+            out_feat = cnef * 2
             layers.append(L.Convolution2D(None, out_feat, ksize=4, stride=2, pad=1, initialW=conv_init, nobias=True))
             layers.append(L.BatchNormalization(out_feat, initial_gamma=bn_init))
             layers.append(LeakyReLU())
 
-            cndf = cndf * 2
-            csize = csize / 2
+            cnef = cnef * 2
+            csize = csize // 2
         # state size. K x 4 x 4
         layers.append(L.Convolution2D(None, nz, ksize=4, stride=1, pad=0, initialW=conv_init, nobias=True))
 
-        super(DCGAN_D, self).__init__(*layers)
+        super(Encoder, self).__init__(*layers)
 
-    def encode(self, x, test=False):
+    def __call__(self, x, test=False):
         for i in range(len(self)):
             if isinstance(self[i], L.BatchNormalization):
                 x = self[i](x, test=test)
@@ -93,34 +91,18 @@ class DCGAN_D(chainer.ChainList):
 
         return x
 
-    def __call__(self, x, test=False):
-        x  = self.encode(x, test)
-
-        x = F.sum(x, axis=0) / x.shape[0]
-        return F.squeeze(x)
-
 class EncoderDecoder(chainer.Chain):
-    def __init__(self, nef, ngf, nc, nBottleneck, image_size=64, conv_init=None, bn_init=None):
+    def __init__(self, nef, ndf, nc, nBottleneck, image_size=64, conv_init=None, bn_init=None):
         super(EncoderDecoder, self).__init__(
-            encoder = DCGAN_D(image_size, nef, nBottleneck, conv_init, bn_init),
+            encoder = Encoder(image_size, nef, nBottleneck, conv_init, bn_init),
             bn      = L.BatchNormalization(nBottleneck, initial_gamma=bn_init),
-            decoder = DCGAN_G(image_size, nc, ngf, conv_init, bn_init)
+            decoder = Decoder(image_size, nc, ndf, conv_init, bn_init)
         )
 
-    def encode(self, x, test=False):
-        h = self.encoder.encode(x, test=test)
-        h = F.leaky_relu(self.bn(h, test=test))
-
-        return h
-
-    def decode(self, x, test=False):
-        h = self.decoder(x, test=test)
-
-        return h
-
     def __call__(self, x, test=False):
-        h = self.encode(x, test=test)
-        h = self.decode(h, test=test)
+        h = self.encoder(x, test=test)
+        h = F.leaky_relu(self.bn(h, test=test))
+        h = self.decoder(h, test=test)
 
         return h
 

@@ -50,39 +50,27 @@ class WassersteinUpdaterFramework(chainer.training.StandardUpdater):
         ###########################
         self.update_g(g_optimizer)
 
-class EncoderDecoderBlendingUpdater(WassersteinUpdaterFramework):
+class EncoderDecoderUpdater(chainer.training.StandardUpdater):
     def __init__(self, *args, **kwargs):
-        super(EncoderDecoderBlendingUpdater, self).__init__(*args, **kwargs)
+        self.autoencoder = kwargs.pop('models')
+        self.args = kwargs.pop('args')
 
-    def g_loss(self, errG, fake, gtv):
-        l2_loss = F.mean_squared_error(fake, gtv)
-        loss = (1-self.args.l2_weight)*errG + self.args.l2_weight*l2_loss
+        super(EncoderDecoderUpdater, self).__init__(*args, **kwargs)
 
-        chainer.report({'loss':loss}, self.G)
-        chainer.report({'l2_loss':l2_loss}, self.G)
-        chainer.report({'gan_loss':errG}, self.G)
+    def update_core(self):
+        optimizer = self.get_optimizer('main')
 
-        return loss
-
-    def update_d(self, optimizer):
         batch = self.get_iterator('main').next()
-        inputv = Variable(self.converter([inputs for inputs, _ in batch], self.device))
-        gtv    = Variable(self.converter([gt     for _, gt     in batch], self.device))
-        errD_real = self.D(gtv)
+        inputv  = Variable(self.converter(batch, self.device))
+        outputv = self.autoencoder(inputv)
+        optimizer.update(self.l2_loss, outputv, inputv)
 
-        # train with fake
-        fake = self.G(inputv)
-        errD_fake = self.D(fake)
+    def l2_loss(self, outputv, gtv):
+        l2_loss = F.mean_squared_error(outputv, gtv)
+        chainer.report({'loss':l2_loss}, self.autoencoder)
 
-        optimizer.update(self.d_loss, errD_real, errD_fake)
+        return l2_loss
 
-    def update_g(self, optimizer):
-        batch = self.get_iterator('main').next()
-        inputv = Variable(self.converter([inputs for inputs, _ in batch], self.device))
-        gtv    = Variable(self.converter([gt     for _, gt     in batch], self.device))
-        fake = self.G(inputv)
-        errG = self.D(fake)
-        optimizer.update(self.g_loss, errG, fake, gtv)
 
 class WassersteinUpdater(WassersteinUpdaterFramework):
     def __init__(self, *args, **kwargs):
