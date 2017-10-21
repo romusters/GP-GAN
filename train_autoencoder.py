@@ -52,6 +52,8 @@ def main():
     parser.add_argument('--print_interval', type=int, default=1, help='Interval of printing log to console (iteration)')
     parser.add_argument('--plot_interval', type=int, default=10, help='Interval of plot (iteration)')
     args = parser.parse_args()
+
+    args.experiment = os.path.join('checkpoints', args.experiment)
     
     random.seed(args.manual_seed)
 

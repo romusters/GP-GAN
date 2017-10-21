@@ -1,12 +1,12 @@
 # data
-*.hdf5
-images
+DataBase
 
 # Pycharm
 .idea
 
 # result
-*result/
+checkpoints
+results
 
 # Model files
 *.npz
