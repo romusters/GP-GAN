@@ -94,18 +94,14 @@ class Encoder(chainer.ChainList):
 class EncoderDecoder(chainer.Chain):
     def __init__(self, nef, ndf, nc, nBottleneck, image_size=64, conv_init=None, bn_init=None):
         super(EncoderDecoder, self).__init__(
-            # encoder = Encoder(image_size, nef, nBottleneck, conv_init, bn_init),
-            encoder = L.VGG16Layers(),
-            # bn      = L.BatchNormalization(nBottleneck, initial_gamma=bn_init),
+            encoder = Encoder(image_size, nef, nBottleneck, conv_init, bn_init),
+            bn      = L.BatchNormalization(nBottleneck, initial_gamma=bn_init),
             decoder = Decoder(image_size, nc, ndf, conv_init, bn_init)
         )
 
     def __call__(self, x, test=False):
-        # h = self.encoder(x, test=test)
-        h = self.encoder(x, layers=['pool5'], test=True)['pool5']
-        h = F.average_pooling_2d(h, h.shape[-2:])
-        h.unchain_backward()
-        # h = F.leaky_relu(self.bn(h, test=test))
+        h = self.encoder(x, test=test)
+        h = F.leaky_relu(self.bn(h, test=test))
         h = self.decoder(h, test=test)
 
         return h

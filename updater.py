@@ -61,9 +61,10 @@ class EncoderDecoderUpdater(chainer.training.StandardUpdater):
         optimizer = self.get_optimizer('main')
 
         batch = self.get_iterator('main').next()
-        inputv  = Variable(self.converter(batch, self.device))
+        inputv = Variable(self.converter([inputs for inputs,  _ in batch], self.device))
+        gtv    = Variable(self.converter([gt     for      _, gt in batch], self.device))
         outputv = self.autoencoder(inputv)
-        optimizer.update(self.l2_loss, outputv, inputv)
+        optimizer.update(self.l2_loss, outputv, gtv)
 
     def l2_loss(self, outputv, gtv):
         l2_loss = F.mean_squared_error(outputv, gtv)

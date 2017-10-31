@@ -7,14 +7,19 @@ import chainer
 
 from utils import make_grid
 
+
+def save_img(var, path):
+    img = chainer.cuda.to_cpu(var.data)
+    img = make_grid(img)
+    img = np.asarray(np.transpose(np.clip((img + 1) * 127.5, 0, 255), (1, 2, 0)), dtype=np.uint8)
+    imsave(path, img)
+
 def sampler(G, dst, inputv, name):
     @chainer.training.make_extension()
     def make_image(trainer):
-        fake = G(inputv, test=True)
-        fake = chainer.cuda.to_cpu(fake.data)
-        img = make_grid(fake)
-        img = np.asarray(np.transpose(np.clip((img+1)*127.5, 0, 255), (1, 2, 0)), dtype=np.uint8)
+        if trainer.updater.iteration == 10:
+            save_img(inputv, os.path.join(dst, name.format(0)))
 
-        imsave(os.path.join(dst, name.format(trainer.updater.iteration)), img)
+        save_img(G(inputv, test=True), os.path.join(dst, name.format(trainer.updater.iteration)))
 
     return make_image

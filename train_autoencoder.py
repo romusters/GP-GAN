@@ -136,11 +136,11 @@ def main():
         os.makedirs(path)
     print('Saving samples to {} ...\n'.format(path))
 
-    train_batch = [trainset[idx] for idx in range(args.test_size)]
+    train_batch = [trainset[idx][0] for idx in range(args.test_size)]
     train_v = Variable(chainer.dataset.concat_examples(train_batch, args.gpu), volatile='on')
     trainer.extend(sampler(autoencoder, path, train_v, 'samples_train_{}.png'), trigger=plot_interval)
 
-    test_batch = [testset[idx] for idx in range(args.test_size)]
+    test_batch = [testset[idx][0] for idx in range(args.test_size)]
     test_v = Variable(chainer.dataset.concat_examples(test_batch, args.gpu), volatile='on')
     trainer.extend(sampler(autoencoder, path, test_v, 'samples_test_{}.png'), trigger=plot_interval)
 
