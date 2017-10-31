@@ -54,6 +54,11 @@ class H5pyDataset(dataset_mixin.DatasetMixin):
         exchange_area = img_as_float(numpy.asarray(self._jitter(exchange_area)))
         im[sx:sx + self._size, sy:sy + self._size] = exchange_area
 
+        mask = numpy.zeros((self._crop_size, self._crop_size, 1))
+        mask[sx:sx+self._size, sy:sy+self._size] = 1
+
+        im = numpy.concatenate((im, mask), axis=-1)
+
         im = numpy.asarray(numpy.transpose(im*2-1, (2, 0, 1)), dtype=self._dtype)
         gt = numpy.asarray(numpy.transpose(gt*2-1, (2, 0, 1)), dtype=self._dtype)
 
@@ -102,5 +107,11 @@ class BlendingDataset(dataset_mixin.DatasetMixin):
 
         copy_paste = bg_croped.copy()
         copy_paste[:, self._sx:self._sx+self._size, self._sx:self._sx+self._size] = obj_croped[:, self._sx:self._sx+self._size, self._sx:self._sx+self._size]
+
+        mask = numpy.zeros((1, self._crop_size, self._crop_size))
+        mask[:, sx:sx + self._size, sy:sy + self._size] = 1
+        mask = mask*2 - 1
+
+        copy_paste = numpy.concatenate((copy_paste, mask), axis=0)
 
         return copy_paste, bg_croped
