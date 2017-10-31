@@ -109,7 +109,7 @@ class BlendingDataset(dataset_mixin.DatasetMixin):
         copy_paste[:, self._sx:self._sx+self._size, self._sx:self._sx+self._size] = obj_croped[:, self._sx:self._sx+self._size, self._sx:self._sx+self._size]
 
         mask = numpy.zeros((1, self._crop_size, self._crop_size))
-        mask[:, sx:sx + self._size, sy:sy + self._size] = 1
+        mask[:, self._sx:self._sx + self._size, self._sx:self._sx + self._size] = 1
         mask = mask*2 - 1
 
         copy_paste = numpy.concatenate((copy_paste, mask), axis=0).astype(numpy.float32)
