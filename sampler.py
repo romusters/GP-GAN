@@ -10,7 +10,7 @@ from utils import make_grid
 
 def save_img(var, path):
     img = chainer.cuda.to_cpu(var.data)
-    img = make_grid(img)
+    img = make_grid(img[:,:3,:,:])
     img = np.asarray(np.transpose(np.clip((img + 1) * 127.5, 0, 255), (1, 2, 0)), dtype=np.uint8)
     imsave(path, img)
 
