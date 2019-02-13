@@ -1,5 +1,5 @@
 chainer==1.24
-cupy==2.0
+cupy==2.0 # Don't install if you don't have a CUDA environment
 numpy
 scikit-image
 scipy
